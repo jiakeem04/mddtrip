@@ -1,0 +1,685 @@
+/* ── 토큰 ──────────────────────────────────────────────── */
+
+/* 미야코지마 바다 팔레트.
+   본문 색은 배경 대비 4.5:1 이상, 카테고리 색도 같은 기준을 맞췄습니다.
+   같은 색을 두 모드에 쓸 수 없어서(밝은 배경엔 짙은 색, 어두운 배경엔 옅은 색)
+   모든 색을 모드별로 따로 정의합니다. */
+
+:root {
+  --bg: #eef4f5;
+  --surface: #ffffff;
+  --surface-2: #e2ecee;
+  --text: #11282b;
+  --text-dim: #486266;
+  --text-faint: #5a7075;
+  --border: #d5e2e5;
+  --accent: #0a7a80;
+  --accent-soft: #d9eff0;
+  --accent-ink: #086a70;   /* accent-soft 위에 얹는 글자 */
+  --on-color: #ffffff;   /* 진한 색 위에 얹는 글자 */
+  --ok: #0f7f6c;
+  --shadow: 0 1px 2px rgba(11, 45, 50, .06), 0 1px 3px rgba(11, 45, 50, .05);
+  --radius: 12px;
+
+  --c-blue: #1f6f9c;
+  --c-amber: #a45d18;
+  --c-teal: #0f7f6c;
+  --c-pink: #a83b71;
+  --c-purple: #5a4fc0;
+  --c-slate: #4f6469;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101a1d;
+    --surface: #172023;
+    --surface-2: #1f2b2f;
+    --text: #e2eced;
+    --text-dim: #9db2b7;
+    --text-faint: #85999e;
+    --border: #2a373b;
+    --accent: #4fc4c9;
+    --accent-soft: #16333a;
+    --accent-ink: #4fc4c9;
+    --on-color: #0c1618;  /* 어두운 모드에선 옅은 색 위라 글자가 어두워야 읽힙니다 */
+    --ok: #4fc9ae;
+    --shadow: none;
+
+    --c-blue: #5fb0e2;
+    --c-amber: #e8a75c;
+    --c-teal: #4fc9ae;
+    --c-pink: #e07aac;
+    --c-purple: #9b90ee;
+    --c-slate: #93a8ae;
+  }
+}
+
+/* 카테고리 색. JS는 `c-teal` 같은 클래스만 붙이고, 실제 값은 여기서 정합니다. */
+.c-blue   { --kind-color: var(--c-blue); }
+.c-amber  { --kind-color: var(--c-amber); }
+.c-teal   { --kind-color: var(--c-teal); }
+.c-pink   { --kind-color: var(--c-pink); }
+.c-purple { --kind-color: var(--c-purple); }
+.c-slate  { --kind-color: var(--c-slate); }
+.c-accent { --kind-color: var(--accent); }
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 0 0 3rem;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard",
+        "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, p { margin: 0; }
+
+a { color: inherit; }
+
+/* ── 상단바 ────────────────────────────────────────────── */
+
+/* 상단바와 화면 전환 탭을 하나의 고정 영역으로 묶습니다.
+   각자 sticky top:0 을 주면 스크롤할 때 서로 겹칩니다. */
+.stickytop {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  padding-top: calc(.85rem + env(safe-area-inset-top, 0px));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar__text { flex: 1; min-width: 0; }
+
+.topbar h1 {
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__text p {
+  font-size: .78rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-shrink: 0;
+}
+
+.updated {
+  font-size: .72rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.iconbtn {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.iconbtn:hover { background: var(--surface-2); color: var(--text); }
+.iconbtn:disabled { opacity: .5; cursor: default; }
+.iconbtn.is-loading svg { animation: spin .9s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .iconbtn.is-loading svg { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+/* ── 화면 전환 탭 ──────────────────────────────────────── */
+
+.viewnav {
+  display: flex;
+  gap: .25rem;
+  padding: .5rem 1rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.viewnav button {
+  flex: 1;
+  padding: .45rem .5rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: .87rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.viewnav button[hidden] { display: none; }
+
+.viewnav button.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+/* ── 배너 ──────────────────────────────────────────────── */
+
+.banner {
+  max-width: 720px;
+  width: calc(100% - 2rem);
+  margin: .75rem auto 0;
+  padding: .6rem .8rem;
+  border-radius: 9px;
+  font-size: .82rem;
+  line-height: 1.45;
+  border: 1px solid transparent;
+}
+
+.banner--error { background: #fdecec; border-color: #f6c9c9; color: #8b2020; }
+.banner--warn  { background: #fdf4e3; border-color: #f0dcae; color: #7a5713; }
+.banner--info  { background: var(--accent-soft); border-color: transparent; color: var(--accent-ink); }
+
+@media (prefers-color-scheme: dark) {
+  .banner--error { background: #3a1e1e; border-color: #5c2b2b; color: #f3b6b6; }
+  .banner--warn  { background: #37301c; border-color: #55492a; color: #ecd39a; }
+}
+
+/* ── 레이아웃 ──────────────────────────────────────────── */
+
+.shell {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: .75rem 1rem 0;
+}
+
+.empty, .note {
+  color: var(--text-faint);
+  font-size: .82rem;
+  padding: .5rem 0;
+}
+
+.note { font-size: .76rem; }
+
+/* ── 날짜 탭 ───────────────────────────────────────────── */
+
+.datetabs {
+  display: flex;
+  gap: .4rem;
+  overflow-x: auto;
+  padding-bottom: .6rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.datetabs::-webkit-scrollbar { display: none; }
+
+.datetab {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .05rem;
+  min-width: 62px;
+  padding: .45rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font: inherit;
+  cursor: pointer;
+}
+
+.datetab.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-color);
+}
+
+.datetab__day { font-size: .64rem; font-weight: 600; opacity: .75; letter-spacing: .02em; }
+.datetab__date { font-size: .95rem; font-weight: 650; font-variant-numeric: tabular-nums; }
+.datetab__weekday { font-size: .68rem; opacity: .8; }
+
+/* ── 그 날의 예약 배지 ─────────────────────────────────── */
+
+.daybookings {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-bottom: .75rem;
+}
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem .65rem;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--kind-color, var(--accent));
+  font-size: .82rem;
+}
+
+.badge__icon { flex-shrink: 0; }
+.badge__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 550; }
+.badge__status { flex-shrink: 0; color: var(--text-dim); font-size: .76rem; font-variant-numeric: tabular-nums; }
+
+/* ── 지도 ──────────────────────────────────────────────── */
+
+.mapcard {
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: .9rem;
+}
+
+.map {
+  height: 260px;
+  background: var(--surface-2);
+}
+
+@media (min-width: 600px) { .map { height: 340px; } }
+
+.mapcard__foot {
+  padding: .6rem .7rem;
+  border-top: 1px solid var(--border);
+}
+
+.mapcard__foot .note { padding: .35rem 0 0; }
+
+/* 번호 마커 */
+.pin { background: none; border: 0; }
+
+.pin__dot {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--kind-color, var(--accent));
+  color: var(--on-color);
+  font-size: .75rem;
+  font-weight: 700;
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+
+/* 동선 폴리라인. Leaflet이 SVG path에 이 클래스를 붙여줍니다. */
+.route-line { stroke: var(--text-faint); }
+
+.pin-popup { display: flex; flex-direction: column; gap: .15rem; font-size: .82rem; }
+.pin-popup__time { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.pin-popup__place { color: var(--text-dim); }
+.pin-popup a { color: var(--accent); font-weight: 550; margin-top: .2rem; }
+
+/* Leaflet 기본 스킨을 테마에 맞춥니다 */
+.leaflet-container { font: inherit; background: var(--surface-2); }
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
+}
+
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, .75) !important;
+  color: var(--text-dim);
+  font-size: .65rem;
+}
+
+.leaflet-bar a {
+  background: var(--surface);
+  color: var(--text);
+  border-bottom-color: var(--border);
+}
+
+.leaflet-bar a:hover { background: var(--surface-2); color: var(--text); }
+
+@media (prefers-color-scheme: dark) {
+  .leaflet-control-attribution { background: rgba(23, 32, 35, .8) !important; }
+  .leaflet-tile-pane { filter: brightness(.82) contrast(1.05); }
+}
+
+/* ── 타임라인 ──────────────────────────────────────────── */
+
+.timeline { display: flex; flex-direction: column; }
+
+.entry {
+  display: flex;
+  gap: .7rem;
+  padding: .8rem .85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.entry__rail { flex-shrink: 0; padding-top: .1rem; }
+
+.entry__seq {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--kind-color, var(--accent));
+  color: var(--on-color);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.entry__body { flex: 1; min-width: 0; }
+
+.entry__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .45rem;
+  margin-bottom: .15rem;
+}
+
+.entry__time {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--kind-color, var(--accent));
+  font-variant-numeric: tabular-nums;
+}
+
+.entry__kind { font-size: .72rem; color: var(--text-faint); }
+
+.entry__cost {
+  margin-left: auto;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.entry__title { font-size: .97rem; font-weight: 620; letter-spacing: -.005em; }
+.entry__place { font-size: .81rem; color: var(--text-dim); margin-top: .1rem; }
+.entry__note { font-size: .8rem; color: var(--text-faint); margin-top: .25rem; }
+
+.entry__actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .55rem; }
+.entry__actions:empty { display: none; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .3rem .6rem;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: .78rem;
+  font-weight: 550;
+  text-decoration: none;
+}
+
+.btn:hover { color: var(--text); border-color: var(--text-faint); }
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-color);
+}
+
+.btn--primary:hover { color: var(--on-color); filter: brightness(1.06); }
+
+/* 다음 장소로 잇는 구간 */
+.connector {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-left: 1.55rem;
+  padding: .3rem 0;
+  border-left: 2px dashed var(--border);
+  padding-left: .85rem;
+}
+
+.connector__icon { font-size: .9rem; }
+
+.connector__link {
+  font-size: .78rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.connector__link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+.connector__plain { font-size: .78rem; color: var(--text-faint); }
+
+.daytotal {
+  margin-top: .85rem;
+  padding: .6rem .85rem;
+  border-radius: 9px;
+  background: var(--surface-2);
+  font-size: .84rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 예산 ──────────────────────────────────────────────── */
+
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+
+.total__label { font-size: .78rem; color: var(--text-faint); }
+.total__amount { font-size: 1.6rem; font-weight: 680; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.total__break { font-size: .76rem; color: var(--text-dim); }
+
+.panel { margin-bottom: 1.1rem; }
+
+.panel__title {
+  font-size: .8rem;
+  font-weight: 620;
+  color: var(--text-faint);
+  margin-bottom: .5rem;
+  letter-spacing: .01em;
+}
+
+.bar { margin-bottom: .6rem; }
+
+.bar__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .5rem;
+  font-size: .82rem;
+  margin-bottom: .25rem;
+}
+
+.bar__value { font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+.bar__track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--kind-color, var(--accent));
+  min-width: 2px;
+}
+
+.linelist { list-style: none; margin: 0; padding: 0; }
+
+.linelist__row {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: .84rem;
+}
+
+.linelist__row:last-child { border-bottom: 0; }
+.linelist__value { font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+
+/* ── 예약 ──────────────────────────────────────────────── */
+
+.booking {
+  padding: .85rem;
+  margin-bottom: .7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--kind-color, var(--accent));
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.booking__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .5rem;
+  margin-bottom: .2rem;
+}
+
+.booking__kind { font-size: .74rem; color: var(--text-faint); }
+.booking__cost { font-size: .8rem; font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.booking__name { font-size: 1rem; font-weight: 640; }
+.booking__when { font-size: .82rem; color: var(--text-dim); margin-top: .15rem; font-variant-numeric: tabular-nums; }
+.booking__place { font-size: .81rem; color: var(--text-dim); margin-top: .15rem; }
+.booking__note { font-size: .8rem; color: var(--text-faint); margin-top: .25rem; }
+
+.booking__ref { font-size: .78rem; color: var(--text-faint); margin-top: .25rem; }
+
+.booking__ref code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--surface-2);
+  padding: .05rem .3rem;
+  border-radius: 4px;
+  color: var(--text-dim);
+}
+
+/* ── 준비물 체크리스트 ─────────────────────────────────── */
+
+.progress {
+  padding: .8rem .9rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  margin-bottom: 1rem;
+}
+
+.progress__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: .45rem;
+}
+
+.progress__text { font-size: .88rem; font-weight: 620; font-variant-numeric: tabular-nums; }
+.progress__pct { font-size: .78rem; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+.progress__track {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--ok);
+  transition: width .18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress__fill { transition: none; }
+}
+
+.packrow {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  padding: .5rem .1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: .88rem;
+}
+
+.packrow:last-child { border-bottom: 0; }
+
+.packrow__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--ok);
+  cursor: pointer;
+}
+
+.packrow__name { flex: 1; min-width: 0; }
+
+.packrow__owner {
+  flex-shrink: 0;
+  padding: .1rem .4rem;
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  font-size: .72rem;
+}
+
+.packrow__note { flex-shrink: 0; font-size: .74rem; color: var(--text-faint); }
+
+.packrow.is-done .packrow__name {
+  color: var(--text-faint);
+  text-decoration: line-through;
+}
+
+/* ── 바닥글 ────────────────────────────────────────────── */
+
+.foot {
+  max-width: 720px;
+  margin: 1.5rem auto 0;
+  padding: 0 1rem;
+  font-size: .74rem;
+  color: var(--text-faint);
+  text-align: center;
+}
