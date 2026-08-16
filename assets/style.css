@@ -596,6 +596,75 @@ a { color: inherit; }
   color: var(--text-dim);
 }
 
+/* ── 잠긴 링크 ─────────────────────────────────────────── */
+
+.btn--lock {
+  border-style: dashed;
+  border-color: var(--text-faint);
+}
+
+.btn--lock:hover { border-style: solid; }
+
+.lockbox {
+  width: min(340px, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.lockbox::backdrop { background: rgba(8, 20, 22, .55); }
+
+.lockbox__form,
+.lockbox > :not(form) { margin: 0; }
+
+.lockbox__form { display: flex; flex-direction: column; gap: .5rem; padding: 1.1rem; }
+
+.lockbox > h2,
+.lockbox > p,
+.lockbox > a,
+.lockbox > button { margin: 0 1.1rem; }
+
+.lockbox > h2 { margin-top: 1.1rem; }
+.lockbox > button:last-child { margin-bottom: 1.1rem; }
+
+.lockbox__title { font-size: .98rem; font-weight: 640; }
+.lockbox__hint { font-size: .8rem; color: var(--text-dim); line-height: 1.5; }
+
+.lockbox__input {
+  width: 100%;
+  padding: .5rem .6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: .9rem;
+}
+
+.lockbox__input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.lockbox__error { font-size: .78rem; color: #b3261e; }
+
+@media (prefers-color-scheme: dark) {
+  .lockbox__error { color: #f3b6b6; }
+}
+
+.lockbox__actions { display: flex; justify-content: flex-end; gap: .4rem; margin-top: .2rem; }
+
+.lockbox__open,
+.lockbox__close {
+  display: block;
+  margin-top: .7rem;
+  text-align: center;
+}
+
+.lockbox__close { margin-top: .4rem; }
+
 /* ── 준비물 체크리스트 ─────────────────────────────────── */
 
 .progress {

@@ -203,6 +203,19 @@ export function parseLinks(raw) {
     .filter((s) => /^https?:\/\//i.test(s));
 }
 
+/**
+ * 비밀번호로 잠긴 링크(`secret:<암호문>`)를 뽑아냅니다.
+ * 개인 정보가 담긴 링크는 시트에 URL 대신 이 토큰을 넣습니다. (tools/encrypt-link.mjs 참고)
+ */
+export function parseSecretLinks(raw) {
+  if (!raw) return [];
+  return String(raw)
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter((s) => /^secret:[A-Za-z0-9_-]{24,}$/.test(s))
+    .map((s) => s.slice('secret:'.length));
+}
+
 /** 링크 버튼에 붙일 짧은 이름. `blog.naver.com` 처럼 도메인만 씁니다. */
 export function linkLabel(url) {
   try {
@@ -297,6 +310,7 @@ export function buildItinerary(rows, settings = {}) {
         cost: parseMoney(pick(row, '비용')),
         note: pick(row, '메모').trim(),
         links: parseLinks(pick(row, '링크')),
+        secrets: parseSecretLinks(pick(row, '링크')),
       };
     })
     .filter((it) => it.date && (it.title || it.place));

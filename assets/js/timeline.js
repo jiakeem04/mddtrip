@@ -1,6 +1,7 @@
 import { h, clear, extLink } from './dom.js';
 import { kindMeta, colorClass, transportIcon, formatMoney, linkLabel } from './model.js';
 import { searchUrl, directionsUrl, hasLocation, travelMode, isAirTravel } from './maplinks.js';
+import { openSecretDialog, canUnlock } from './secret.js';
 
 const MODE_LABEL = {
   walking: '도보',
@@ -27,6 +28,18 @@ function linkButtons(links) {
   return links.map((url, i) => extLink(url, 'btn', `🔗 ${linkLabel(url)} ${i + 1}`));
 }
 
+/** 비밀번호로 잠긴 링크. 누르면 비밀번호를 묻고, 맞으면 그 자리에서 풀어 보여줍니다. */
+function secretButtons(secrets, label) {
+  if (!secrets?.length || !canUnlock()) return [];
+  return secrets.map((blob) =>
+    h('button', {
+      class: 'btn btn--lock',
+      type: 'button',
+      onclick: () => openSecretDialog(blob, label),
+    }, '🔒 잠긴 링크')
+  );
+}
+
 function entryCard(item, settings) {
   const meta = kindMeta(item.kind);
   const mapUrl = mapLinkOf(item);
@@ -48,6 +61,7 @@ function entryCard(item, settings) {
       h('div', { class: 'entry__actions' },
         mapUrl && extLink(mapUrl, 'btn btn--map', '📍 지도'),
         linkButtons(item.links),
+        secretButtons(item.secrets, item.title || item.place),
       ),
     ),
   );
